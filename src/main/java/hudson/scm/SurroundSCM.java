@@ -430,7 +430,8 @@ public final class SurroundSCM extends SCM {
         cmd.add("-p".concat(repository));
         cmd.add("-d".concat(workspace.getRemote()));
         cmd.add("-r");
-        cmd.add("-s" + scm_datetime_formatter.format(currentDate));
+        cmd.add("-a1");     // for now hardcoded: get latest version in state <No State>
+        //cmd.add("-s" + scm_datetime_formatter.format(currentDate));
         if (!bIncludeOutput) {
             cmd.add("-q");
         }
