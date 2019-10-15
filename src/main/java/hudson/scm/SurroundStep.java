@@ -158,6 +158,8 @@ public class SurroundStep extends SCMStep {
     /**
      * This populates the Username//Password credential dropdown on the config page.
      *
+     * @param context context
+     * @param remote remote
      * @return  Returns a list of credentials to populate the combobox with.
      */
     @Exported
@@ -168,6 +170,8 @@ public class SurroundStep extends SCMStep {
     /**
      * This populates the rsaKeyFileId dropdown with a list of 'FileCredentials' that could be used.
      *
+     * @param context context
+     * @param remote remote
      * @return  Returns a list of FileCredential objects that have been configured.
      */
     @Exported

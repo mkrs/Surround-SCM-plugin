@@ -16,7 +16,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
-import org.jenkinsci.plugins.gitclient.GitClient;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -38,7 +37,6 @@ import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceCriteria;
 
-@Extension
 public final class SurroundSCMSource extends SCMSource {
    /*
     * all configuration fields should be private mandatory fields should be final
@@ -89,7 +87,7 @@ public final class SurroundSCMSource extends SCMSource {
 
       PrintStream logger = listener.getLogger();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      final Node node = Jenkins.getInstance();
+      final Node node = Jenkins.get();
       Launcher launcher = node.createLauncher(listener);
       launcher.launch().cmds(cmd).stdout(baos).join();
       
@@ -165,7 +163,7 @@ public final class SurroundSCMSource extends SCMSource {
       return CredentialsMatchers.firstOrNull(
             CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class, context, ACL.SYSTEM,
                   URIRequirementBuilder.fromUri(credentialsId).build()),
-            CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId), GitClient.CREDENTIALS_MATCHER));
+            CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId)));
    }
    
 }

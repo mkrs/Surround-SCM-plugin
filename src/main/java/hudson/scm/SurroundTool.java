@@ -47,7 +47,7 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
   }
 
   public static SurroundTool getDefaultInstallation() {
-    Jenkins jenkinsInstance = Jenkins.getInstance();
+    Jenkins jenkinsInstance = Jenkins.get();
     if(jenkinsInstance == null)
       return null;
 
@@ -80,7 +80,7 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
   public static void onLoaded() {
     // creates default tool installation if needed. Uses "sscm" or migrates data from previous versions.
 
-    Jenkins jenkinsInstance = Jenkins.getInstance();
+    Jenkins jenkinsInstance = Jenkins.get();
     if(jenkinsInstance == null)
       return;
 
@@ -108,7 +108,7 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
 
     @Override
     public FormValidation doCheckHome(@QueryParameter File value) {
-      Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+      Jenkins.get().checkPermission(Jenkins.ADMINISTER);
       String path = value.getPath();
       return FormValidation.validateExecutable(path);
     }

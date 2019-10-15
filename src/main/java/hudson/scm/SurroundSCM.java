@@ -133,6 +133,15 @@ public final class SurroundSCM extends SCM {
      * - Updated the config page, which necessitated data structure changes.
      */
     /**
+     * @param rsaKeyPath Path to the RSA key file on the remote node.
+     * @param server servername
+     * @param serverPort serverPort
+     * @param userName userName
+     * @param password password
+     * @param branch branch
+     * @param repository repository
+     * @param surroundSCMExecutable path to sscm
+     * @param includeOutput includeOutput
      * @deprecated as of release v10, Significant updates to the Jenkins integration, including:
      */
     @SuppressWarnings({"WeakerAccess", "deprecation"}) // Legacy constructor, can't make it private
@@ -148,6 +157,14 @@ public final class SurroundSCM extends SCM {
     }
 
     /**
+     * @param rsaKeyPath Path to the RSA key file on the remote node.
+     * @param server servername
+     * @param serverPort serverPort
+     * @param userName userName
+     * @param password password
+     * @param branch branch
+     * @param repository repository
+     * @param surroundSCMExecutable path to sscm
      * @deprecated Deprecated as of release v9, added option to include // exclude output.
      */
     @SuppressWarnings({"deprecation", "unused"})
@@ -639,6 +656,9 @@ public final class SurroundSCM extends SCM {
      * Attempt to find a pre-configured 'SurroundTool' with a saved 'sscm_tool_name'
      * Currently this will always fall back to the 'default' tool for the current node and requires some further
      * testing of edge conditions
+     * 
+     * @param listener listener
+     * @return the tool
      */
     public SurroundTool resolveSscmTool(TaskListener listener) {
         // TODO_PTV: Review this function, should we allow users to override the sscm_tool_name in the project level?
@@ -865,6 +885,8 @@ public final class SurroundSCM extends SCM {
         /**
          * This populates the rsaKeyFileId dropdown with a list of 'FileCredentials' that could be used.
          *
+         * @param context context
+         * @param remote remote
          * @return Returns a list of FileCredential objects that have been configured.
          */
         @SuppressWarnings("unused") // This is called via Stapler
