@@ -3,8 +3,6 @@ package andritz.sscm;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +34,7 @@ import jenkins.scm.api.SCMHeadObserver;
 import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceCriteria;
+import jenkins.scm.api.SCMSourceDescriptor;
 
 public final class SurroundSCMSource extends SCMSource {
    /*
@@ -166,4 +165,12 @@ public final class SurroundSCMSource extends SCMSource {
             CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId)));
    }
    
+   @Extension
+	public static final class DescriptorImpl extends SCMSourceDescriptor {
+
+		@Override
+		public String getDisplayName() {
+			return "Surround Branches";
+		}
+	}
 }
