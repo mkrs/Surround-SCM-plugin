@@ -266,6 +266,30 @@ public class SSCMUtils {
    * @return  Returns the {@link StandardUsernameCredentials} matching the specified credentialsID, or null
    */
   @CheckForNull
+  public static StandardUsernameCredentials getCredentials(Job<?,?> owner, String server, String port, String credentialsId) {
+    if(credentialsId != null) {
+      List<? extends StandardUsernameCredentials> credentials = availableCredentials(owner, String.format("sscm://%s:%s", server, port));
+
+      for (StandardUsernameCredentials c : credentials) {
+        if(c.getId().equals(credentialsId)) {
+          return c;
+        }
+      }
+    }
+    return null;
+  }
+
+
+  /**
+   * Looks up a specific credential based on the credential ID.
+   * @param owner   Used during credential lookup from the CredentialProvider
+   * @param env     Used to generate a 'Source' string
+   * @param server  Used to generate the source string
+   * @param port    Used to generate the source string
+   * @param credentialsId ID string of the credential to lookup.
+   * @return  Returns the {@link StandardUsernameCredentials} matching the specified credentialsID, or null
+   */
+  @CheckForNull
   public static StandardUsernameCredentials getCredentials(Job<?,?> owner, EnvVars env,
                                                            String server, String port, String credentialsId) {
     if(credentialsId != null) {

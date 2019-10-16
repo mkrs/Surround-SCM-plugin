@@ -85,8 +85,8 @@ public final class SurroundSCMSource extends SCMSource {
       cmd.add("-b".concat(branch));
       cmd.add("-p".concat(repository));
       cmd.add("-a"); // Display all branches and their properties.
-      cmd.add(String.format("-z%s:%s", server, serverPort));
-      cmd.addMasked(getSscmArgUser());
+      addSscmArgServer(cmd);
+      addSscmArgUser(cmd);
 
       PrintStream logger = listener.getLogger();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -122,7 +122,6 @@ public final class SurroundSCMSource extends SCMSource {
          boolean bActive = m.group(3).equals(sYes);
          boolean bFrozen = m.group(5).equals(sYes);
          boolean bHidden = m.group(6).equals(sYes);
-         logger.format("debug: branch='%s', type='%s', active='%s'=%b, hidden='%s'=%b, frozen='%s'=%b\n", branch, type, m.group(3),bActive, m.group(5),bHidden, m.group(6),bFrozen);
          if (type == "mainline") {
             logger.format("ignoring branch '%s' because it is a mainline branch\n", branch);
             continue;
@@ -131,9 +130,24 @@ public final class SurroundSCMSource extends SCMSource {
             logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b\n", branch, bActive, bFrozen, bHidden);
             continue;
          }
-         SurroundSCMHead head = new SurroundSCMHead(branch);
+
+         SurroundSCMHead head = new SurroundSCMHead(branch,repository);
          SurroundSCMRevision revision = new SurroundSCMRevision(head);
-         observer.observe(head, revision);
+         // null criteria means that all branches match.
+         if (criteria == null) {
+            // get revision and add observe
+            observer.observe(head, revision);
+         } else {
+            SCMSourceCriteria.Probe probe = new SurroundSCMProbe(head,revision,this,listener);
+            if (criteria.isHead(probe, listener)) {
+               logger.format("observe branch: '%s'\n", head.getName());
+               observer.observe(head, revision);
+            } else {
+               logger.format("ignoring branch '%s' because criteria say it is not a head.\n", head.getName());
+            }
+         }
+         // check for user abort
+         checkInterrupt();
       }
    }
 
@@ -148,14 +162,17 @@ public final class SurroundSCMSource extends SCMSource {
       return sscm;
    }
 
-   private String getSscmArgUser() {
-      String result = "";
+   public void addSscmArgServer(ArgumentListBuilder cmd) {
+      cmd.add(String.format("-z%s:%s",server,serverPort));
+   }
+
+   public void addSscmArgUser(ArgumentListBuilder cmd) {
       StandardUsernameCredentials credentials = getCredentials();
       if (credentials != null && credentials instanceof UsernamePasswordCredentials) {
          UsernamePasswordCredentials upc = (UsernamePasswordCredentials) credentials;
-         result = String.format("-y%s:%s", upc.getUsername(), upc.getPassword().getPlainText());
+         String result = String.format("-y%s:%s", upc.getUsername(), upc.getPassword().getPlainText());
+         cmd.addMasked(result);
       }
-      return result;
    }
 
    @CheckForNull
@@ -180,7 +197,7 @@ public final class SurroundSCMSource extends SCMSource {
 
 		@Override
 		public String getDisplayName() {
-			return "Surround Branches";
+			return "Surround SCM";
       }
       
       public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String remote) {

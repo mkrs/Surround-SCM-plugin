@@ -82,6 +82,24 @@
       </dependency>
 
       <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-step-api</artifactId>
+         <version>2.14</version>
+      </dependency>
+
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-multibranch</artifactId>
+         <version>2.16</version>
+      </dependency>
+
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-api</artifactId>
+         <version>2.27</version>
+      </dependency>
+
+      <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>mailer</artifactId>
          <version>1.16</version>

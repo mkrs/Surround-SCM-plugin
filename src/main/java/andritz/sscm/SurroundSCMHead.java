@@ -7,9 +7,15 @@ public class SurroundSCMHead extends SCMHead {
     *
     */
    private static final long serialVersionUID = 1L;
+   private final String repository;
 
-   public SurroundSCMHead(String name) {
-      super(name);
+   public SurroundSCMHead(String branch, String repository) {
+      super(branch);
+      this.repository = repository;
+   }
+
+   public String getRepository() {
+      return repository;
    }
 
 }

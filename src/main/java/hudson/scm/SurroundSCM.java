@@ -652,6 +652,19 @@ public final class SurroundSCM extends SCM {
         return changesCount;
     }
 
+    public void addSscmArgServer(ArgumentListBuilder cmd) {
+       cmd.add(String.format("-z%s:%s",server,serverPort));
+    }
+ 
+    public void addSscmArgUser(ArgumentListBuilder cmd, Job<?, ?> owner) {
+       StandardUsernameCredentials credentials = getCredentials(owner);
+       if (credentials != null && credentials instanceof UsernamePasswordCredentials) {
+          UsernamePasswordCredentials upc = (UsernamePasswordCredentials) credentials;
+          String result = String.format("-y%s:%s", upc.getUsername(), upc.getPassword().getPlainText());
+          cmd.addMasked(result);
+       }
+    }
+
     /**
      * Attempt to find a pre-configured 'SurroundTool' with a saved 'sscm_tool_name'
      * Currently this will always fall back to the 'default' tool for the current node and requires some further
@@ -762,6 +775,11 @@ public final class SurroundSCM extends SCM {
         }
 
         return result;
+    }
+
+    @CheckForNull
+    private StandardUsernameCredentials getCredentials(Job<?, ?> owner) {
+        return SSCMUtils.getCredentials(owner, server, serverPort, credentialsId);
     }
 
     @CheckForNull
