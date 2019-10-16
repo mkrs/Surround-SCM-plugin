@@ -14,8 +14,10 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -24,9 +26,11 @@ import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.scm.SCM;
+import hudson.scm.SSCMUtils;
 import hudson.scm.SurroundSCM;
 import hudson.security.ACL;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.SCMHeadEvent;
@@ -97,28 +101,34 @@ public final class SurroundSCMSource extends SCMSource {
       // free09001 (baseline)(active:yes)(caching:on demand)(frozen:yes)(hidden:yes)
       String output = baos.toString();
       String[] lines = output.split("\r?\n");
-      String regex = "^(\\s+) " + "\\((\\s+)\\)" // branch type
+      String regex = "^(\\S+) "
+            + "\\((\\S+)\\)" // branch type
             + "\\(active:(yes|no)\\)" // active
             + "\\(caching:([^\\)]+)\\)" // caching
             + "\\(frozen:(yes|no)\\)" // frozen
             + "\\(hidden:(yes|no)\\)" // hidden
             + "$";
+      String sYes = "yes";
       Pattern pattern = Pattern.compile(regex);
       for (String line : lines) {
+         line.split("");
          Matcher m = pattern.matcher(line);
          if (!m.matches()) {
-            logger.format("Regex does not match line '%s'", line);
+            logger.format("Regex does not match line '%s'\n", line);
             continue;
          }
          String branch = m.group(1);
          String type = m.group(2);
-         boolean bActive = m.group(3) == "yes";
-         boolean bFrozen = m.group(5) == "yes";
+         boolean bActive = m.group(3).equals(sYes);
+         boolean bFrozen = m.group(5).equals(sYes);
+         boolean bHidden = m.group(6).equals(sYes);
+         logger.format("debug: branch='%s', type='%s', active='%s'=%b, hidden='%s'=%b, frozen='%s'=%b\n", branch, type, m.group(3),bActive, m.group(5),bHidden, m.group(6),bFrozen);
          if (type == "mainline") {
+            logger.format("ignoring branch '%s' because it is a mainline branch\n", branch);
             continue;
          }
-         if (!bActive || bFrozen) {
-            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b", branch, bActive, bFrozen);
+         if ((!bActive) || bFrozen || bHidden) {
+            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b\n", branch, bActive, bFrozen, bHidden);
             continue;
          }
          SurroundSCMHead head = new SurroundSCMHead(branch);
@@ -171,6 +181,11 @@ public final class SurroundSCMSource extends SCMSource {
 		@Override
 		public String getDisplayName() {
 			return "Surround Branches";
-		}
+      }
+      
+      public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String remote) {
+         return SSCMUtils.doFillCredentialsIdItems(context, remote);
+      }
+
 	}
 }

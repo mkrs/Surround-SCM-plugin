@@ -836,12 +836,13 @@ public final class SurroundSCM extends SCM {
     }
 
     @SuppressWarnings("WeakerAccess")
+    @Extension
     public static class SurroundSCMDescriptor extends SCMDescriptor<SurroundSCM> {
 
         /**
          * Constructs a new SurroundSCMDescriptor.
          */
-        protected SurroundSCMDescriptor() {
+        public SurroundSCMDescriptor() {
             super(SurroundSCM.class, null);
             load();
         }
