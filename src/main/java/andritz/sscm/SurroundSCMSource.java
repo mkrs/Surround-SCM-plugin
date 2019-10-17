@@ -57,6 +57,22 @@ public final class SurroundSCMSource extends SCMSource {
    @CheckForNull
    private String credentialsId;
 
+   public String getServer() {
+      return server;
+   }
+
+   public String getServerPort() {
+      return serverPort;
+   }
+
+   public String getBranch() {
+      return branch;
+   }
+
+   public String getRepository() {
+      return repository;
+   }
+
    public String getCredentialsId() {
       return credentialsId;
    }
