@@ -66,13 +66,10 @@ public class SurroundSCMBlamer extends Blamer {
       final Node node = Jenkins.get();
       Launcher launcher = node.createLauncher(listener);
       try {
-         Pattern branchFilePattern = Pattern.compile(String.format(".*/%s/(.*)", branch));
-         for (String file : locations.getAbsolutePaths()) {
-            Matcher m = branchFilePattern.matcher(file);
-            String fileInBranch = m.group(1);
-            final int lastIndex = fileInBranch.lastIndexOf("/");
-            final String fileName = fileInBranch.substring(lastIndex + 1);
-            final String repository = fileInBranch.substring(0,lastIndex);
+         for (String file : locations.getRelativePaths()) {
+            final int lastIndex = file.lastIndexOf("/");
+            final String fileName = file.substring(lastIndex + 1);
+            final String repository = file.substring(0,lastIndex);
             blames.logInfo("Getting annotations for repo: %s, file: %s", repository, fileName);
             List<SurroundSCMAnnotation> annotations = sscm.annotate(build, launcher, workspace, listener, repository, fileName);
             for (SurroundSCMAnnotation s : annotations) {

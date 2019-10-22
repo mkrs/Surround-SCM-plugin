@@ -516,7 +516,7 @@ public final class SurroundSCM extends SCM {
         cmd.add("annotate");
         cmd.add(file);
         cmd.add("-b".concat(branch));
-        cmd.add("-p".concat(repo));
+        cmd.add(String.format("-p%s/%s", repository, repo));
         cmd.add(getServerConnectionArgument(build.getParent(), environment, workspace));
         cmd.addMasked(getUserPasswordArgument(build.getParent(), environment));
 
