@@ -1,36 +1,61 @@
 package hudson.scm;
 
-import com.cloudbees.plugins.credentials.CredentialsMatcher;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsNameProvider;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.*;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import hudson.*;
-import hudson.model.*;
-import hudson.model.queue.Tasks;
-import hudson.scm.config.RSAKey;
-import hudson.security.ACL;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.jenkinsci.plugins.plaincredentials.FileCredentials;
-import org.kohsuke.stapler.*;
-import org.kohsuke.stapler.export.Exported;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import com.cloudbees.plugins.credentials.CredentialsNameProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+
+import org.jenkinsci.plugins.plaincredentials.FileCredentials;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.export.Exported;
+
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.AbstractBuild;
+import hudson.model.Item;
+import hudson.model.Job;
+import hudson.model.Node;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.scm.config.RSAKey;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 
 @Extension
 public final class SurroundSCM extends SCM {
@@ -475,6 +500,79 @@ public final class SurroundSCM extends SCM {
         }
 
         listener.getLogger().println("Checkout completed.");
+    }
+
+    public List<SurroundSCMAnnotation> annotate(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
+            String repo, String file) throws IOException, InterruptedException {
+        List<SurroundSCMAnnotation> annotations = new ArrayList<>();
+
+        EnvVars environment = build.getEnvironment(listener);
+        if (build instanceof AbstractBuild) {
+            EnvVarsUtils.overrideAll(environment, ((AbstractBuild) build).getBuildVariables());
+        }
+
+        ArgumentListBuilder cmd = new ArgumentListBuilder();
+        cmd.add(getSscmExe(workspace, listener, environment));//will default to sscm user can put in path
+        cmd.add("annotate");
+        cmd.add(file);
+        cmd.add("-b".concat(branch));
+        cmd.add("-p".concat(repo));
+        cmd.add(getServerConnectionArgument(build.getParent(), environment, workspace));
+        cmd.addMasked(getUserPasswordArgument(build.getParent(), environment));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int cmdResult = launcher.launch().envs(environment).cmds(cmd).stdout(baos).join();
+        if (cmdResult == 0) {
+            Pattern annotateLinePattern = Pattern.compile("^(\\S+)\\s+(\\d+)\\s+(.*)");
+            String content = baos.toString();
+            List<String> lines = Arrays.stream(content.split("\r?\n")).skip(2).collect(Collectors.toList());
+            int idx = 0;
+            for (String line : lines) {
+                Matcher m = annotateLinePattern.matcher(line);
+                if (m.matches()) {
+                    annotations.add(new SurroundSCMAnnotation(idx, m.group(1), Integer.parseInt(m.group(2))));
+                    idx++;
+                }
+            }
+        }
+
+        listener.getLogger().printf("Annotate of %s/%s completed.\n", repo, file);
+        return annotations;
+    }
+
+    public SurroundSCMUser getUserInformation(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
+        String user) throws IOException, InterruptedException, NoSuchElementException {
+
+        EnvVars environment = build.getEnvironment(listener);
+        if (build instanceof AbstractBuild) {
+            EnvVarsUtils.overrideAll(environment, ((AbstractBuild) build).getBuildVariables());
+        }
+
+        ArgumentListBuilder cmd = new ArgumentListBuilder();
+        cmd.add(getSscmExe(workspace, listener, environment));//will default to sscm user can put in path
+        cmd.add("lsuser");
+        cmd.add("-e");  // include email
+        cmd.add("-f");  // include full name
+        cmd.add(getServerConnectionArgument(build.getParent(), environment, workspace));
+        cmd.addMasked(getUserPasswordArgument(build.getParent(), environment));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int cmdResult = launcher.launch().envs(environment).cmds(cmd).stdout(baos).join();
+        if (cmdResult == 0) {
+            Pattern userPattern = Pattern.compile("^User name: +([^\n]+).*\r?\n Full name: +([^\n]+)\r?\n Email type: +[^\n]*\r?\n Email address: +([^\n]*)",Pattern.MULTILINE);
+            String content = baos.toString();
+            List<String> lines = Arrays.stream(content.split("\r?\n")).skip(2).collect(Collectors.toList());
+            for (String line : lines) {
+                Matcher m = userPattern.matcher(line);
+                if (m.matches()) {
+                    if (m.group(1).equals(user)) {
+                        SurroundSCMUser sscmUser  = new SurroundSCMUser(user,m.group(2),m.group(3));
+                        return sscmUser;
+                    }
+                }
+            }
+        }
+        throw new NoSuchElementException(String.format("Username %s not found",user));
     }
 
     /**
