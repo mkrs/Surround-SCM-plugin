@@ -27,6 +27,8 @@
            ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
       -->
       <workflow.version>2.9</workflow.version>
+      <slf4j.version>1.7.28</slf4j.version>
+      <forensics-api-plugin.version>0.4.1</forensics-api-plugin.version>
    </properties>
 
    <name>Seapine Surround SCM Plug-in</name>
@@ -62,7 +64,49 @@
       </pluginRepository>
    </pluginRepositories>
 
+   <dependencyManagement>
+      <dependencies>
+
+         <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-api</artifactId>
+         <version>${slf4j.version}</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-job</artifactId>
+            <version>2.32</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-step-api</artifactId>
+            <version>2.19</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-multibranch</artifactId>
+            <version>2.16</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-api</artifactId>
+            <version>2.34</version>
+         </dependency>
+
+      </dependencies>
+   </dependencyManagement>
+
    <dependencies>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-nop</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>scm-api</artifactId>
@@ -79,24 +123,6 @@
                <artifactId>httpclient</artifactId>
             </exclusion>
          </exclusions>
-      </dependency>
-
-      <dependency>
-         <groupId>org.jenkins-ci.plugins.workflow</groupId>
-         <artifactId>workflow-step-api</artifactId>
-         <version>2.14</version>
-      </dependency>
-
-      <dependency>
-         <groupId>org.jenkins-ci.plugins.workflow</groupId>
-         <artifactId>workflow-multibranch</artifactId>
-         <version>2.16</version>
-      </dependency>
-
-      <dependency>
-         <groupId>org.jenkins-ci.plugins.workflow</groupId>
-         <artifactId>workflow-api</artifactId>
-         <version>2.27</version>
       </dependency>
 
       <dependency>
@@ -121,6 +147,12 @@
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>plain-credentials</artifactId>
          <version>1.5</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>io.jenkins.plugins</groupId>
+         <artifactId>forensics-api</artifactId>
+         <version>${forensics-api-plugin.version}</version>
       </dependency>
    </dependencies>
 </project>
