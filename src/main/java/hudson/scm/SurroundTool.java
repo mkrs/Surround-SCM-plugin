@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class SurroundTool extends ToolInstallation implements NodeSpecific<SurroundTool>, EnvironmentSpecific<SurroundTool>
 {
+  private static final Logger logger = Logger.getLogger(SurroundTool.class.getName());
   public static transient final String DEFAULT_NAME = "Default";
 
   private static final long serialVersionUID = 1;
@@ -48,10 +50,11 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
 
   public static SurroundTool getDefaultInstallation() {
     Jenkins jenkinsInstance = Jenkins.get();
-    if(jenkinsInstance == null)
-      return null;
-
     DescriptorImpl surroundTools = jenkinsInstance.getDescriptorByType(SurroundTool.DescriptorImpl.class);
+    if (surroundTools == null) {
+      logger.severe("jenkins instance did not find any Descriptor by type for SurroundTool.DescriptorImpl");
+      return null;
+    }
     SurroundTool tool = surroundTools.getInstallation(SurroundTool.DEFAULT_NAME);
     if(tool != null) {
       return tool;
@@ -64,6 +67,11 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
         return surroundTools.getInstallations()[0];
       }
     }
+  }
+
+  @Override
+  public DescriptorImpl getDescriptor() {
+    return new DescriptorImpl();
   }
 
   @Override
@@ -81,12 +89,11 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
     // creates default tool installation if needed. Uses "sscm" or migrates data from previous versions.
 
     Jenkins jenkinsInstance = Jenkins.get();
-    if(jenkinsInstance == null)
-      return;
-
     DescriptorImpl descriptor = (DescriptorImpl)jenkinsInstance.getDescriptor(SurroundTool.class);
-    if (descriptor == null)
+    if (descriptor == null) {
+      logger.severe("jenkins instance did not find any Descriptor for SurroundTool");
       return;
+    }
       
     SurroundTool[] installations = getInstallations(descriptor);
     if(installations != null && installations.length > 0) {

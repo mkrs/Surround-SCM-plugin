@@ -5,7 +5,7 @@
    <parent>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>plugin</artifactId>
-      <version>3.50</version>
+      <version>3.51</version>
       <relativePath />
    </parent>
 
@@ -16,7 +16,7 @@
 
    <properties>
       <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-      <jenkins.version>2.164.1</jenkins.version>
+      <jenkins.version>2.190.1</jenkins.version>
       <!-- Java Level to use. Java 7 required when using core >= 1.612 -->
       <java.level>8</java.level>
       <!-- Jenkins Test Harness version you use to test the plugin. -->
@@ -73,6 +73,21 @@
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-nop</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-jdk14</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>log4j-over-slf4j</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>jcl-over-slf4j</artifactId>
          <version>${slf4j.version}</version>
       </dependency>
 
