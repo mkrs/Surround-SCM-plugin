@@ -41,7 +41,7 @@ public class SurroundSCMFileSystem extends SCMFileSystem {
    private Job<?,?> job;
    private EnvVars env = new EnvVars();
 
-   protected SurroundSCMFileSystem(@NonNull Item owner, @NonNull SurroundSCM scm, @CheckForNull SurroundSCMRevision rev) throws Exception {
+   protected SurroundSCMFileSystem(@NonNull Item owner, @NonNull SurroundSCM scm, @NonNull SurroundSCMRevision rev) throws Exception {
       super(rev);
       this.tempDir = Files.createTempDirectory(String.format("sscm-%s",rev.getHead ().getName()));
       this.owner = owner;
@@ -155,7 +155,11 @@ public class SurroundSCMFileSystem extends SCMFileSystem {
          }
          SurroundSCM sscm = (SurroundSCM) scm;
          
-         if (rev != null && !(rev instanceof SurroundSCMRevision)) {
+         if (rev == null) {
+            return null;
+         }
+
+         if (!(rev instanceof SurroundSCMRevision)) {
             return null;
          }
          SurroundSCMRevision revision = (SurroundSCMRevision) rev;

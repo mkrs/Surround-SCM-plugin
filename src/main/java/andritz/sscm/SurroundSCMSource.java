@@ -40,7 +40,7 @@ import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceCriteria;
 import jenkins.scm.api.SCMSourceDescriptor;
 
-public final class SurroundSCMSource extends SCMSource {
+public class SurroundSCMSource extends SCMSource {
    /*
     * all configuration fields should be private mandatory fields should be final
     * non-mandatory fields should be non-final
@@ -92,6 +92,11 @@ public final class SurroundSCMSource extends SCMSource {
    }
 
    @Override
+   public SCMSourceDescriptor getDescriptor() {
+      return new DescriptorImpl();
+   }
+
+   @Override
    protected void retrieve(@CheckForNull SCMSourceCriteria criteria, @NonNull SCMHeadObserver observer,
          @CheckForNull SCMHeadEvent<?> event, @NonNull TaskListener listener) throws IOException, InterruptedException {
 
@@ -127,10 +132,9 @@ public final class SurroundSCMSource extends SCMSource {
       String sYes = "yes";
       Pattern pattern = Pattern.compile(regex);
       for (String line : lines) {
-         line.split("");
          Matcher m = pattern.matcher(line);
          if (!m.matches()) {
-            logger.format("Regex does not match line '%s'\n", line);
+            logger.format("Regex does not match line '%s'%n", line);
             continue;
          }
          String branch = m.group(1);
@@ -139,11 +143,11 @@ public final class SurroundSCMSource extends SCMSource {
          boolean bFrozen = m.group(5).equals(sYes);
          boolean bHidden = m.group(6).equals(sYes);
          if (type == "mainline") {
-            logger.format("ignoring branch '%s' because it is a mainline branch\n", branch);
+            logger.format("ignoring branch '%s' because it is a mainline branch%n", branch);
             continue;
          }
          if ((!bActive) || bFrozen || bHidden) {
-            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b\n", branch, bActive, bFrozen, bHidden);
+            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b%n", branch, bActive, bFrozen, bHidden);
             continue;
          }
 
@@ -156,10 +160,10 @@ public final class SurroundSCMSource extends SCMSource {
          } else {
             SCMSourceCriteria.Probe probe = new SurroundSCMProbe(head,revision,this,listener);
             if (criteria.isHead(probe, listener)) {
-               logger.format("observe branch: '%s'\n", head.getName());
+               logger.format("observe branch: '%s'%n", head.getName());
                observer.observe(head, revision);
             } else {
-               logger.format("ignoring branch '%s' because criteria say it is not a head.\n", head.getName());
+               logger.format("ignoring branch '%s' because criteria say it is not a head.%n", head.getName());
             }
          }
          // check for user abort
@@ -209,7 +213,7 @@ public final class SurroundSCMSource extends SCMSource {
    }
    
    @Extension
-	public static final class DescriptorImpl extends SCMSourceDescriptor {
+	public static class DescriptorImpl extends SCMSourceDescriptor {
 
 		@Override
 		public String getDisplayName() {

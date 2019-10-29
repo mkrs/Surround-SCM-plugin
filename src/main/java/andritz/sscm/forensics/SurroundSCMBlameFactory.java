@@ -1,9 +1,7 @@
 package andritz.sscm.forensics;
 
-import java.io.IOException;
 import java.util.Optional;
 
-import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;

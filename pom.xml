@@ -28,7 +28,7 @@
       -->
       <workflow.version>2.9</workflow.version>
       <slf4j.version>1.7.28</slf4j.version>
-      <forensics-api-plugin.version>0.4.1</forensics-api-plugin.version>
+      <forensics-api-plugin.version>0.5.0</forensics-api-plugin.version>
    </properties>
 
    <name>Seapine Surround SCM Plug-in</name>
@@ -64,43 +64,12 @@
       </pluginRepository>
    </pluginRepositories>
 
-   <dependencyManagement>
-      <dependencies>
-
-         <dependency>
-         <groupId>org.slf4j</groupId>
-         <artifactId>slf4j-api</artifactId>
-         <version>${slf4j.version}</version>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-job</artifactId>
-            <version>2.32</version>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-step-api</artifactId>
-            <version>2.19</version>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-multibranch</artifactId>
-            <version>2.16</version>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-api</artifactId>
-            <version>2.34</version>
-         </dependency>
-
-      </dependencies>
-   </dependencyManagement>
-
    <dependencies>
+      <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+      </dependency>
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-nop</artifactId>
@@ -111,6 +80,16 @@
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>scm-api</artifactId>
          <version>2.6.3</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins</groupId>
+         <artifactId>branch-api</artifactId>
+         <version>2.5.4</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins</groupId>
+         <artifactId>script-security</artifactId>
+         <version>1.66</version>
       </dependency>
 
       <dependency>
@@ -124,17 +103,42 @@
             </exclusion>
          </exclusions>
       </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-job</artifactId>
+         <version>2.35</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-step-api</artifactId>
+         <version>2.20</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-multibranch</artifactId>
+         <version>2.21</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-api</artifactId>
+         <version>2.37</version>
+      </dependency>
+      <dependency>
+         <groupId>org.jenkins-ci.plugins.workflow</groupId>
+         <artifactId>workflow-cps</artifactId>
+         <version>2.74</version>
+      </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>mailer</artifactId>
-         <version>1.16</version>
+         <version>1.29</version>
       </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>structs</artifactId>
-         <version>1.19</version>
+         <version>1.20</version>
       </dependency>
 
       <dependency>

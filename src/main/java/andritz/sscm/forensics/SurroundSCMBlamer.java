@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import hudson.FilePath;
@@ -66,10 +64,15 @@ public class SurroundSCMBlamer extends Blamer {
       final Node node = Jenkins.get();
       Launcher launcher = node.createLauncher(listener);
       try {
-         for (String file : locations.getRelativePaths()) {
-            final int lastIndex = file.lastIndexOf("/");
-            final String fileName = file.substring(lastIndex + 1);
-            final String repository = file.substring(0,lastIndex);
+         for (String file : locations.getFiles()) {
+            if ( ! file.startsWith(workspacePath)) {
+               blames.logError("Skipping file '%s' (not in workspace path)", file);
+               continue;
+            }
+            String relativeFile = file.substring(workspacePath.length());
+            final int lastIndex = relativeFile.lastIndexOf("/");
+            final String fileName = relativeFile.substring(lastIndex + 1);
+            final String repository = relativeFile.substring(0,lastIndex);
             blames.logInfo("Getting annotations for repo: %s, file: %s", repository, fileName);
             List<SurroundSCMAnnotation> annotations = sscm.annotate(build, launcher, workspace, listener, repository, fileName);
             for (SurroundSCMAnnotation s : annotations) {
@@ -102,11 +105,11 @@ public class SurroundSCMBlamer extends Blamer {
          return sscmUser.getEmail();
 
       } catch (NoSuchElementException nseex) {
-         listener.getLogger().printf("Error finding email for user %s.\n", user);
+         listener.getLogger().printf("Error finding email for user %s.%n", user);
       } catch (IOException ioex) {
-         listener.getLogger().printf("Error in getting sscm information for user %s.\n", user);
+         listener.getLogger().printf("Error in getting sscm information for user %s.%n", user);
       } catch (InterruptedException intex) {
-         listener.getLogger().printf("Annotation was interrupted.\n");
+         listener.getLogger().printf("Annotation was interrupted.%n");
       }
       return "<NOT_FOUND>";
    }

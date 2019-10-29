@@ -536,7 +536,7 @@ public final class SurroundSCM extends SCM {
             }
         }
 
-        listener.getLogger().printf("Annotate of %s/%s completed.\n", repo, file);
+        listener.getLogger().printf("Annotate of %s/%s completed.%n", repo, file);
         return annotations;
     }
 
