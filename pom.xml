@@ -5,7 +5,7 @@
    <parent>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>plugin</artifactId>
-      <version>3.50</version>
+      <version>3.51</version>
       <relativePath />
    </parent>
 
@@ -26,7 +26,8 @@
            ~ hpi-plugin.version: The HPI Maven Plugin version used by the plugin..
            ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
       -->
-      <workflow.version>2.9</workflow.version>
+      <forensics-api-plugin.version>0.5.0</forensics-api-plugin.version>
+      <slf4j.version>1.7.28</slf4j.version>
    </properties>
 
    <name>Seapine Surround SCM Plug-in</name>
@@ -115,27 +116,32 @@
          <artifactId>plain-credentials</artifactId>
       </dependency>
 
+      <dependency>
+         <groupId>io.jenkins.plugins</groupId>
+         <artifactId>forensics-api</artifactId>
+         <version>${forensics-api-plugin.version}</version>
+      </dependency>
 
       
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-api</artifactId>
-         <version>1.7.26</version>
+         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>jcl-over-slf4j</artifactId>
-         <version>1.7.26</version>
+         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>log4j-over-slf4j</artifactId>
-         <version>1.7.26</version>
+         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
          <groupId>org.slf4j</groupId>
          <artifactId>slf4j-jdk14</artifactId>
-         <version>1.7.26</version>
+         <version>${slf4j.version}</version>
       </dependency>
    </dependencies>
 </project>

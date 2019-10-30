@@ -152,7 +152,7 @@ public class SurroundSCMFileSystem extends SCMFileSystem {
          }
          SurroundSCM sscm = (SurroundSCM) scm;
          
-         if (rev != null && !(rev instanceof SurroundSCMRevision)) {
+         if (rev == null || !(rev instanceof SurroundSCMRevision)) {
             return null;
          }
          SurroundSCMRevision revision = (SurroundSCMRevision) rev;

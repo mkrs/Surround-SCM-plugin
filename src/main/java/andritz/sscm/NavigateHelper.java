@@ -26,7 +26,7 @@ public class NavigateHelper {
    private final TaskListener listener;
 	private List<Node> nodes;
 
-   public NavigateHelper(SurroundSCMFileSystem fs) {
+   public NavigateHelper(@NonNull SurroundSCMFileSystem fs) {
       this.fs = fs;
       this.scm = fs.getScm();
       this.head = (SurroundSCMHead)fs.getRevision().getHead();
@@ -102,7 +102,7 @@ public class NavigateHelper {
             nodes.add(new Node(repository + "/" + fileName,false));
          }
       } catch (Exception e) {
-			
+			listener.getLogger().println(String.format("Caught exception when building paths: %s",e));
       }
    }
    

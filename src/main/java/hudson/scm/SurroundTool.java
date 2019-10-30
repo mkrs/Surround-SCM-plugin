@@ -49,11 +49,12 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
   }
 
   public static SurroundTool getDefaultInstallation() {
-    Jenkins jenkinsInstance = Jenkins.get();
-    if(jenkinsInstance == null)
+    
+    DescriptorImpl surroundTools = Jenkins.get().getDescriptorByType(SurroundTool.DescriptorImpl.class);
+    if (surroundTools == null) {
+      logger.severe("Jenkins did not find any Descriptor by type for SurroundTool.DescriptorImpl");
       return null;
-
-    DescriptorImpl surroundTools = jenkinsInstance.getDescriptorByType(SurroundTool.DescriptorImpl.class);
+    }
     SurroundTool tool = surroundTools.getInstallation(SurroundTool.DEFAULT_NAME);
     if(tool != null) {
       return tool;
