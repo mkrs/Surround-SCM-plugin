@@ -26,9 +26,8 @@
            ~ hpi-plugin.version: The HPI Maven Plugin version used by the plugin..
            ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
       -->
-      <workflow.version>2.9</workflow.version>
-      <slf4j.version>1.7.28</slf4j.version>
       <forensics-api-plugin.version>0.5.0</forensics-api-plugin.version>
+      <slf4j.version>1.7.28</slf4j.version>
    </properties>
 
    <name>Seapine Surround SCM Plug-in</name>
@@ -64,6 +63,18 @@
       </pluginRepository>
    </pluginRepositories>
 
+   <dependencyManagement>
+      <dependencies>
+         <dependency>
+            <groupId>io.jenkins.tools.bom</groupId>
+            <artifactId>bom-2.176.x</artifactId>
+            <version>3</version>
+            <scope>import</scope>
+            <type>pom</type>
+         </dependency>
+      </dependencies>
+   </dependencyManagement>
+
    <dependencies>
       <dependency>
       <groupId>org.slf4j</groupId>
@@ -94,7 +105,6 @@
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>scm-api</artifactId>
-         <version>2.6.3</version>
       </dependency>
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
@@ -110,13 +120,6 @@
       <dependency>
          <groupId>org.jenkins-ci.plugins.workflow</groupId>
          <artifactId>workflow-scm-step</artifactId>
-         <version>${workflow.version}</version>
-         <exclusions>
-            <exclusion>
-               <groupId>org.apache.httpcomponents</groupId>
-               <artifactId>httpclient</artifactId>
-            </exclusion>
-         </exclusions>
       </dependency>
       <dependency>
          <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -126,46 +129,58 @@
       <dependency>
          <groupId>org.jenkins-ci.plugins.workflow</groupId>
          <artifactId>workflow-step-api</artifactId>
-         <version>2.20</version>
-      </dependency>
-      <dependency>
-         <groupId>org.jenkins-ci.plugins.workflow</groupId>
-         <artifactId>workflow-multibranch</artifactId>
-         <version>2.21</version>
       </dependency>
       <dependency>
          <groupId>org.jenkins-ci.plugins.workflow</groupId>
          <artifactId>workflow-api</artifactId>
-         <version>2.37</version>
-      </dependency>
-      <dependency>
-         <groupId>org.jenkins-ci.plugins.workflow</groupId>
-         <artifactId>workflow-cps</artifactId>
-         <version>2.74</version>
       </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>mailer</artifactId>
-         <version>1.29</version>
       </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>structs</artifactId>
-         <version>1.20</version>
       </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>credentials</artifactId>
-         <version>2.3.0</version>
       </dependency>
 
       <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>plain-credentials</artifactId>
-         <version>1.5</version>
+      </dependency>
+
+      <dependency>
+         <groupId>io.jenkins.plugins</groupId>
+         <artifactId>forensics-api</artifactId>
+         <version>${forensics-api-plugin.version}</version>
+      </dependency>
+
+      
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-api</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>jcl-over-slf4j</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>log4j-over-slf4j</artifactId>
+         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.slf4j</groupId>
+         <artifactId>slf4j-jdk14</artifactId>
+         <version>${slf4j.version}</version>
       </dependency>
       
       <dependency>

@@ -3,6 +3,7 @@ package andritz.sscm;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +23,8 @@ import org.kohsuke.stapler.QueryParameter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -41,6 +44,7 @@ import jenkins.scm.api.SCMSourceCriteria;
 import jenkins.scm.api.SCMSourceDescriptor;
 
 public class SurroundSCMSource extends SCMSource {
+   private static final Logger logger = Logger.getLogger(SurroundSCMSource.class.getName());
    /*
     * all configuration fields should be private mandatory fields should be final
     * non-mandatory fields should be non-final
@@ -210,6 +214,17 @@ public class SurroundSCMSource extends SCMSource {
             CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class, context, ACL.SYSTEM,
                   URIRequirementBuilder.fromUri(credentialsId).build()),
             CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId)));
+   }
+
+   @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED)
+   public static void onLoaded() {
+      // creates default tool installation if needed. Uses "sscm" or migrates data
+      // from previous versions.
+
+      DescriptorImpl descriptor = (DescriptorImpl) Jenkins.get().getDescriptor(SurroundSCMSource.class);
+      if (descriptor == null) {
+         logger.severe("Jenkins has no registered Descriptor for SurroundSCMSource.");
+      }
    }
    
    @Extension
