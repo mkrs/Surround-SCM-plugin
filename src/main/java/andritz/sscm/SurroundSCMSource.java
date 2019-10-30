@@ -3,6 +3,7 @@ package andritz.sscm;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +23,8 @@ import org.kohsuke.stapler.QueryParameter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -40,7 +43,8 @@ import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceCriteria;
 import jenkins.scm.api.SCMSourceDescriptor;
 
-public final class SurroundSCMSource extends SCMSource {
+public class SurroundSCMSource extends SCMSource {
+   private static final Logger logger = Logger.getLogger(SurroundSCMSource.class.getName());
    /*
     * all configuration fields should be private mandatory fields should be final
     * non-mandatory fields should be non-final
@@ -127,10 +131,9 @@ public final class SurroundSCMSource extends SCMSource {
       String sYes = "yes";
       Pattern pattern = Pattern.compile(regex);
       for (String line : lines) {
-         line.split("");
          Matcher m = pattern.matcher(line);
          if (!m.matches()) {
-            logger.format("Regex does not match line '%s'\n", line);
+            logger.format("Regex does not match line '%s'%n", line);
             continue;
          }
          String branch = m.group(1);
@@ -139,11 +142,11 @@ public final class SurroundSCMSource extends SCMSource {
          boolean bFrozen = m.group(5).equals(sYes);
          boolean bHidden = m.group(6).equals(sYes);
          if (type == "mainline") {
-            logger.format("ignoring branch '%s' because it is a mainline branch\n", branch);
+            logger.format("ignoring branch '%s' because it is a mainline branch%n", branch);
             continue;
          }
          if ((!bActive) || bFrozen || bHidden) {
-            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b\n", branch, bActive, bFrozen, bHidden);
+            logger.format("ignoring branch '%s' because bActive=%b bFrozen=%b bHidden=%b%n", branch, bActive, bFrozen, bHidden);
             continue;
          }
 
@@ -156,10 +159,10 @@ public final class SurroundSCMSource extends SCMSource {
          } else {
             SCMSourceCriteria.Probe probe = new SurroundSCMProbe(head,revision,this,listener);
             if (criteria.isHead(probe, listener)) {
-               logger.format("observe branch: '%s'\n", head.getName());
+               logger.format("observe branch: '%s'%n", head.getName());
                observer.observe(head, revision);
             } else {
-               logger.format("ignoring branch '%s' because criteria say it is not a head.\n", head.getName());
+               logger.format("ignoring branch '%s' because criteria say it is not a head.%n", head.getName());
             }
          }
          // check for user abort
@@ -207,9 +210,20 @@ public final class SurroundSCMSource extends SCMSource {
                   URIRequirementBuilder.fromUri(credentialsId).build()),
             CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId)));
    }
+
+   @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED)
+   public static void onLoaded() {
+      // creates default tool installation if needed. Uses "sscm" or migrates data
+      // from previous versions.
+
+      DescriptorImpl descriptor = (DescriptorImpl) Jenkins.get().getDescriptor(SurroundSCMSource.class);
+      if (descriptor == null) {
+         logger.severe("Jenkins has no registered Descriptor for SurroundSCMSource.");
+      }
+   }
    
    @Extension
-	public static final class DescriptorImpl extends SCMSourceDescriptor {
+	public static class DescriptorImpl extends SCMSourceDescriptor {
 
 		@Override
 		public String getDisplayName() {

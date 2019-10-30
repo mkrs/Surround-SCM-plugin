@@ -18,8 +18,6 @@ import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.SCMSource;
 import jenkins.scm.api.SCMSourceDescriptor;
 
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -49,10 +47,9 @@ public class SurroundSCMFileSystem extends SCMFileSystem {
       this.revision = rev;
       this.listener = new LogTaskListener(logger, Level.INFO);
 
-      if (owner instanceof WorkflowJob) {
-         WorkflowJob _job = (WorkflowJob) owner;
-		   job = _job;
-			Run<?,?> build = _job.getLastBuild();
+      if (owner instanceof Job<?,?>) {
+         Job<?,?> job = (Job<?,?>) owner;
+		   Run<?,?> build = job.getLastBuild();
 			env = build.getEnvironment(listener);
 		}
    }

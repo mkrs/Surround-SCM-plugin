@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class SurroundTool extends ToolInstallation implements NodeSpecific<SurroundTool>, EnvironmentSpecific<SurroundTool>
 {
+  private static final Logger logger = Logger.getLogger(SurroundTool.class.getName());
   public static transient final String DEFAULT_NAME = "Default";
 
   private static final long serialVersionUID = 1;
@@ -80,13 +82,11 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
   public static void onLoaded() {
     // creates default tool installation if needed. Uses "sscm" or migrates data from previous versions.
 
-    Jenkins jenkinsInstance = Jenkins.get();
-    if(jenkinsInstance == null)
+    DescriptorImpl descriptor = (DescriptorImpl)Jenkins.get().getDescriptor(SurroundTool.class);
+    if (descriptor == null) {
+      logger.severe("Jenkins has no registered Descriptor for SurroundTool.");
       return;
-
-    DescriptorImpl descriptor = (DescriptorImpl)jenkinsInstance.getDescriptor(SurroundTool.class);
-    if (descriptor == null)
-      return;
+    }
       
     SurroundTool[] installations = getInstallations(descriptor);
     if(installations != null && installations.length > 0) {
