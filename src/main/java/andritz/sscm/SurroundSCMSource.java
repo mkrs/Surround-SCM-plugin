@@ -96,11 +96,6 @@ public class SurroundSCMSource extends SCMSource {
    }
 
    @Override
-   public SCMSourceDescriptor getDescriptor() {
-      return new DescriptorImpl();
-   }
-
-   @Override
    protected void retrieve(@CheckForNull SCMSourceCriteria criteria, @NonNull SCMHeadObserver observer,
          @CheckForNull SCMHeadEvent<?> event, @NonNull TaskListener listener) throws IOException, InterruptedException {
 

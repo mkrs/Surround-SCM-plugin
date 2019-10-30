@@ -70,11 +70,6 @@ public final class SurroundTool extends ToolInstallation implements NodeSpecific
   }
 
   @Override
-  public DescriptorImpl getDescriptor() {
-    return new DescriptorImpl();
-  }
-
-  @Override
   public SurroundTool forNode(@NonNull Node node, TaskListener log) throws IOException, InterruptedException {
     return new SurroundTool(getName(), translateFor(node, log), Collections.<ToolProperty<?>>emptyList());
   }
