@@ -9,14 +9,18 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,13 +62,16 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 
 @Extension
-public final class SurroundSCM extends SCM {
+public final class SurroundSCM extends SCM implements Serializable {
+    private static final long serialVersionUID = 7899036674317233131L;
+
     /**
      * Singleton descriptor.
      */
-    @SuppressWarnings("WeakerAccess")
-    @Extension
-    public static final SurroundSCMDescriptor DESCRIPTOR = new SurroundSCMDescriptor();
+    // @SuppressWarnings("WeakerAccess")
+    // @Extension
+    // public static final SurroundSCMDescriptor DESCRIPTOR = new
+    // SurroundSCMDescriptor();
 
     /**
      * We consider any changes 'significant'
@@ -77,11 +84,13 @@ public final class SurroundSCM extends SCM {
     private static transient final int pluginVersion = 9;
 
     /**
-     * Internal constant used for formatting datetime fields for the Surround SCM CLI
+     * Internal constant used for formatting datetime fields for the Surround SCM
+     * CLI
      */
     private static transient final String SURROUND_DATETIME_FORMAT_STR = "yyyyMMddHHmmss";
     /**
-     * Internal constant used for formatting datetime fields for the Surround SCM CLI
+     * Internal constant used for formatting datetime fields for the Surround SCM
+     * CLI
      */
     private static transient final String SURROUND_DATETIME_FORMAT_STR_2 = "yyyyMMddHH:mm:ss";
 
@@ -92,6 +101,9 @@ public final class SurroundSCM extends SCM {
     private String repository;
     private String credentialsId;
     private RSAKey rsaKey;
+    private UsernamePasswordCredentials blameCredentials;
+    private String blameExe;
+    private transient String sscmLsuserStdout;
 
     // TODO: Review if this is needed.
     private String sscm_tool_name;
@@ -101,34 +113,36 @@ public final class SurroundSCM extends SCM {
      */
     private boolean bIncludeOutput;
 
-
     /**
-     * @deprecated This was used to store the absolute path to the Surround SCM RSA Key file. We now use {@link RSAKey}
-     * to store this information.
+     * @deprecated This was used to store the absolute path to the Surround SCM RSA
+     *             Key file. We now use {@link RSAKey} to store this information.
      */
-    @SuppressWarnings({"FieldCanBeLocal", "unused", "DeprecatedIsStillUsed"})
+    @SuppressWarnings({ "FieldCanBeLocal", "unused", "DeprecatedIsStillUsed" })
     private transient String rsaKeyPath;
 
     /**
-     * @deprecated This was used to store the local path to the Surround SCM Executable. It is no longer needed since we moved
-     * to using the SurroundTool.
+     * @deprecated This was used to store the local path to the Surround SCM
+     *             Executable. It is no longer needed since we moved to using the
+     *             SurroundTool.
      */
-    @SuppressWarnings({"unused", "DeprecatedIsStillUsed"})
+    @SuppressWarnings({ "unused", "DeprecatedIsStillUsed" })
     // Needs to stay to allow Jenkins to upgrade old plugin installations
     private transient String surroundSCMExecutable;
 
     /**
-     * @deprecated This was used to store the username used to connect to Surround. For legacy support reasons
-     * we are leaving the variable here so people can have a smooth upgrade. However if they edit their project
-     * they will be forced to use the new Credentials interface.
+     * @deprecated This was used to store the username used to connect to Surround.
+     *             For legacy support reasons we are leaving the variable here so
+     *             people can have a smooth upgrade. However if they edit their
+     *             project they will be forced to use the new Credentials interface.
      */
     @SuppressWarnings("DeprecatedIsStillUsed")
     private String userName;
 
     /**
-     * @deprecated This was used to store the password used to connect to Surround. For legacy support reasons
-     * we are leaving the variable here so people can have a smooth upgrade. However if they edit their project
-     * they will be forced to use the new Credentials interface.
+     * @deprecated This was used to store the password used to connect to Surround.
+     *             For legacy support reasons we are leaving the variable here so
+     *             people can have a smooth upgrade. However if they edit their
+     *             project they will be forced to use the new Credentials interface.
      */
     @SuppressWarnings("DeprecatedIsStillUsed")
     private String password;
@@ -153,26 +167,26 @@ public final class SurroundSCM extends SCM {
     }
 
     /*
-     * - Switched to @DataBoundSetter's for optional parameters
-     * - Switched to Credential storage for usernames & rsakeys
-     * - Updated the config page, which necessitated data structure changes.
+     * - Switched to @DataBoundSetter's for optional parameters - Switched to
+     * Credential storage for usernames & rsakeys - Updated the config page, which
+     * necessitated data structure changes.
      */
     /**
-     * @param rsaKeyPath Path to the RSA key file on the remote node.
-     * @param server servername
-     * @param serverPort serverPort
-     * @param userName userName
-     * @param password password
-     * @param branch branch
-     * @param repository repository
+     * @param rsaKeyPath            Path to the RSA key file on the remote node.
+     * @param server                servername
+     * @param serverPort            serverPort
+     * @param userName              userName
+     * @param password              password
+     * @param branch                branch
+     * @param repository            repository
      * @param surroundSCMExecutable path to sscm
-     * @param includeOutput includeOutput
-     * @deprecated as of release v10, Significant updates to the Jenkins integration, including:
+     * @param includeOutput         includeOutput
+     * @deprecated as of release v10, Significant updates to the Jenkins
+     *             integration, including:
      */
-    @SuppressWarnings({"WeakerAccess", "deprecation"}) // Legacy constructor, can't make it private
-    public SurroundSCM(String rsaKeyPath, String server, String serverPort, String userName,
-                       String password, String branch, String repository, String surroundSCMExecutable,
-                       boolean includeOutput) {
+    @SuppressWarnings({ "WeakerAccess", "deprecation" }) // Legacy constructor, can't make it private
+    public SurroundSCM(String rsaKeyPath, String server, String serverPort, String userName, String password,
+            String branch, String repository, String surroundSCMExecutable, boolean includeOutput) {
         this(server, serverPort, branch, repository, null);
         this.rsaKey = new RSAKey(RSAKey.Type.Path, rsaKeyPath);
         this.userName = Util.fixEmptyAndTrim(userName);
@@ -182,19 +196,20 @@ public final class SurroundSCM extends SCM {
     }
 
     /**
-     * @param rsaKeyPath Path to the RSA key file on the remote node.
-     * @param server servername
-     * @param serverPort serverPort
-     * @param userName userName
-     * @param password password
-     * @param branch branch
-     * @param repository repository
+     * @param rsaKeyPath            Path to the RSA key file on the remote node.
+     * @param server                servername
+     * @param serverPort            serverPort
+     * @param userName              userName
+     * @param password              password
+     * @param branch                branch
+     * @param repository            repository
      * @param surroundSCMExecutable path to sscm
-     * @deprecated Deprecated as of release v9, added option to include // exclude output.
+     * @deprecated Deprecated as of release v9, added option to include // exclude
+     *             output.
      */
-    @SuppressWarnings({"deprecation", "unused"})
-    public SurroundSCM(String rsaKeyPath, String server, String serverPort, String userName,
-                       String password, String branch, String repository, String surroundSCMExecutable) {
+    @SuppressWarnings({ "deprecation", "unused" })
+    public SurroundSCM(String rsaKeyPath, String server, String serverPort, String userName, String password,
+            String branch, String repository, String surroundSCMExecutable) {
         this(rsaKeyPath, server, serverPort, userName, password, branch, repository, surroundSCMExecutable, true);
     }
 
@@ -204,9 +219,10 @@ public final class SurroundSCM extends SCM {
     }
 
     /**
-     * @return Returns the login username, this has been deprecated in favor of the credentials plugin
+     * @return Returns the login username, this has been deprecated in favor of the
+     *         credentials plugin
      */
-    @SuppressWarnings({"unused", "deprecation"})
+    @SuppressWarnings({ "unused", "deprecation" })
     public String getUserName() {
         return userName;
     }
@@ -214,7 +230,7 @@ public final class SurroundSCM extends SCM {
     /**
      * @return Returns the old password.
      */
-    @SuppressWarnings({"unused", "deprecation"})
+    @SuppressWarnings({ "unused", "deprecation" })
     public String getPassword() {
         return password;
     }
@@ -222,7 +238,8 @@ public final class SurroundSCM extends SCM {
     /**
      * Used to populate the rsaKeyFilePath field in stapler.
      *
-     * @return If using an RSA key file path, returns the path, otherwise returns null.
+     * @return If using an RSA key file path, returns the path, otherwise returns
+     *         null.
      */
     @SuppressWarnings("unused") // Called from stapler to setup the 'rsaKeyFilePath' field on config.jelly
     public String getRsaKeyFilePath() {
@@ -243,7 +260,8 @@ public final class SurroundSCM extends SCM {
     /**
      * Used to populate the rsaKeyFileId field in stapler.
      *
-     * @return If using an RSA  key file ID, returns the ID string, otherwise returns null.
+     * @return If using an RSA key file ID, returns the ID string, otherwise returns
+     *         null.
      */
     @SuppressWarnings("unused") // Called from stapler to setup the 'rsaKeyFileId' field on config.jelly
     public String getRsaKeyFileId() {
@@ -284,7 +302,7 @@ public final class SurroundSCM extends SCM {
         return bIncludeOutput;
     }
 
-    //TODO: @DataBoundSetter
+    // TODO: @DataBoundSetter
     public void setIncludeOutput(boolean includeOutput) {
         this.bIncludeOutput = includeOutput;
     }
@@ -301,8 +319,10 @@ public final class SurroundSCM extends SCM {
 
     @Exported
     public boolean isUsingRsaKeyPath() {
-        // This function is a bit screwy due to needing to handle legacy plugin configurations.  In old configurations
-        // we didn't have a plain 'rsaKey' variable, but instead had 'rsaKeyPath'.  We need to select the 'Path'
+        // This function is a bit screwy due to needing to handle legacy plugin
+        // configurations. In old configurations
+        // we didn't have a plain 'rsaKey' variable, but instead had 'rsaKeyPath'. We
+        // need to select the 'Path'
         // in two situations:
         // 1. rsaKey exists & is a Path type.
         // 2. rsaKeyPath exists & is not blank.
@@ -318,9 +338,10 @@ public final class SurroundSCM extends SCM {
     /**
      * This function was required to make the Snippet Generator work
      *
-     * @return Always returns null because we want users to use rsaKeyFileId: and rsaKeyFilePath:,
-     * not rsaKey: [type: "ID" value: "blah"].  When we actually returned the rsaKey here, it screwed w/ the
-     * the Snippet Generator.
+     * @return Always returns null because we want users to use rsaKeyFileId: and
+     *         rsaKeyFilePath:, not rsaKey: [type: "ID" value: "blah"]. When we
+     *         actually returned the rsaKey here, it screwed w/ the the Snippet
+     *         Generator.
      */
     @Exported
     public RSAKey getRsaKey() {
@@ -334,12 +355,14 @@ public final class SurroundSCM extends SCM {
 
     /**
      * @return Returns 'null' to indicate that this is an un-used field.
-     * @deprecated This was getting called.... not entirely sure why, having it always return 'null' to indicate
-     * that the field is not being used.  It was showing up in the 'Snippet Generator' for the 'checkout' command
-     * prior to me having this return null.
-     * <p>
-     * When I didn't have this field, and it was not marked as @{@link Exported} the 'Snippet Generator' was throwing
-     * errors and wouldn't correctly generate the example 'checkout' command.
+     * @deprecated This was getting called.... not entirely sure why, having it
+     *             always return 'null' to indicate that the field is not being
+     *             used. It was showing up in the 'Snippet Generator' for the
+     *             'checkout' command prior to me having this return null.
+     *             <p>
+     *             When I didn't have this field, and it was not marked
+     *             as @{@link Exported} the 'Snippet Generator' was throwing errors
+     *             and wouldn't correctly generate the example 'checkout' command.
      */
     @Exported
     public String getRsaKeyPath() {
@@ -348,53 +371,54 @@ public final class SurroundSCM extends SCM {
 
     /**
      * @param rsaKeyPath Path to the RSA key file on the remote node.
-     * @deprecated Leaving this here for when reading in old versions of the plugin we can setup the new version
-     * of the rsaKey storage.
+     * @deprecated Leaving this here for when reading in old versions of the plugin
+     *             we can setup the new version of the rsaKey storage.
      */
     @DataBoundSetter
     public void setRsaKeyPath(String rsaKeyPath) {
         setRsaKeyFilePath(rsaKeyPath);
     }
 
-    @Override
-    public SCMDescriptor<?> getDescriptor() {
-        return DESCRIPTOR;
-    }
+    // @Override
+    // public SCMDescriptor<?> getDescriptor() {
+    // return DESCRIPTOR;
+    // }
 
     /**
-     * Calculates the SCMRevisionState that represents the state of the
-     * workspace of the given build. The returned object is then fed into the
-     * compareRemoteRevisionWith(AbstractProject, Launcher, FilePath,
-     * TaskListener, SCMRevisionState) method as the baseline SCMRevisionState
-     * to determine if the build is necessary.
+     * Calculates the SCMRevisionState that represents the state of the workspace of
+     * the given build. The returned object is then fed into the
+     * compareRemoteRevisionWith(AbstractProject, Launcher, FilePath, TaskListener,
+     * SCMRevisionState) method as the baseline SCMRevisionState to determine if the
+     * build is necessary.
      * <p>
      * {@inheritDoc}
      */
     @Override
-    public SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?, ?> build,
-                                                   @Nullable FilePath workspace,
-                                                   @Nullable Launcher launcher,
-                                                   @Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public SCMRevisionState calcRevisionsFromBuild(@Nonnull Run<?, ?> build, @Nullable FilePath workspace,
+            @Nullable Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         SimpleDateFormat scm_datetime_formatter = new SimpleDateFormat(SURROUND_DATETIME_FORMAT_STR);
 
         final Date lastBuildDate = build.getTime();
         final int lastBuildNum = build.getNumber();
         SurroundSCMRevisionState scmRevisionState = new SurroundSCMRevisionState(lastBuildDate, lastBuildNum);
-        listener.getLogger().println("calcRevisionsFromBuild determined revision for build #" + scmRevisionState.getBuildNumber() + " built originally at " + scm_datetime_formatter.format(scmRevisionState.getDate()) + " pluginVer: " + pluginVersion);
+        listener.getLogger()
+                .println("calcRevisionsFromBuild determined revision for build #" + scmRevisionState.getBuildNumber()
+                        + " built originally at " + scm_datetime_formatter.format(scmRevisionState.getDate())
+                        + " pluginVer: " + pluginVersion);
 
         return scmRevisionState;
     }
 
     /**
-     * We don't actually NEED a workspace for polling. We are saving our info to a system temp file, further the way
-     * we are currently working (saving  the info to a system temp file) is a bit daft since we could just directly
-     * read the command output rather than saving it to a file.
+     * We don't actually NEED a workspace for polling. We are saving our info to a
+     * system temp file, further the way we are currently working (saving the info
+     * to a system temp file) is a bit daft since we could just directly read the
+     * command output rather than saving it to a file.
      * <p>
-     * However, we have relied on this to be set to 'True' since we started coding, and when I tried to turn it off, stuff
-     * broke.  Maybe we can try again later?
+     * However, we have relied on this to be set to 'True' since we started coding,
+     * and when I tried to turn it off, stuff broke. Maybe we can try again later?
      *
-     * @return Returns 'True'
-     * {@inheritDoc}
+     * @return Returns 'True' {@inheritDoc}
      */
     @Override
     public boolean requiresWorkspaceForPolling() {
@@ -410,9 +434,9 @@ public final class SurroundSCM extends SCM {
      * {@inheritDoc}
      */
     @Override
-    public PollingResult compareRemoteRevisionWith(
-            @Nonnull Job<?, ?> project, @Nullable Launcher launcher, @Nullable FilePath workspace,
-            @Nonnull TaskListener listener, @Nonnull SCMRevisionState baseline) throws IOException, InterruptedException {
+    public PollingResult compareRemoteRevisionWith(@Nonnull Job<?, ?> project, @Nullable Launcher launcher,
+            @Nullable FilePath workspace, @Nonnull TaskListener listener, @Nonnull SCMRevisionState baseline)
+            throws IOException, InterruptedException {
         SimpleDateFormat scm_datetime_formatter = new SimpleDateFormat(SURROUND_DATETIME_FORMAT_STR);
 
         Date lastBuild = ((SurroundSCMRevisionState) baseline).getDate();
@@ -421,7 +445,8 @@ public final class SurroundSCM extends SCM {
         Date now = new Date();
         File temporaryFile = File.createTempFile("changes", "txt");
 
-        listener.getLogger().println("Calculating changes since build #" + lastBuildNum + " which happened at " + scm_datetime_formatter.format(lastBuild) + " pluginVer: " + pluginVersion);
+        listener.getLogger().println("Calculating changes since build #" + lastBuildNum + " which happened at "
+                + scm_datetime_formatter.format(lastBuild) + " pluginVer: " + pluginVersion);
 
         double countChanges = 0;
         if (launcher != null)
@@ -430,7 +455,8 @@ public final class SurroundSCM extends SCM {
             listener.getLogger().println("Launcher was null... skipping determining change count.");
 
         if (!temporaryFile.delete()) {
-            listener.getLogger().println("Failed to delete temporary file [" + temporaryFile.getAbsolutePath() + "] marking the file to be deleted when Jenkins restarts.");
+            listener.getLogger().println("Failed to delete temporary file [" + temporaryFile.getAbsolutePath()
+                    + "] marking the file to be deleted when Jenkins restarts.");
             temporaryFile.deleteOnExit();
         }
 
@@ -443,20 +469,22 @@ public final class SurroundSCM extends SCM {
     }
 
     /**
-     * Obtains a fresh workspace of the module(s) into the specified directory of the specified machine. We'll use
-     * sscm get.
+     * Obtains a fresh workspace of the module(s) into the specified directory of
+     * the specified machine. We'll use sscm get.
      * <p>
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    // Casting the 'build' to an 'AbstractBuild' causes some warnings, however we are checking to make sure build is an 'instanceof' AbstractBuild, so this shouldn't be a problem.
+    // Casting the 'build' to an 'AbstractBuild' causes some warnings, however we
+    // are checking to make sure build is an 'instanceof' AbstractBuild, so this
+    // shouldn't be a problem.
     @Override
-    public void checkout(
-            @Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
-            @CheckForNull File changelogFile, @CheckForNull SCMRevisionState baseline) throws IOException, InterruptedException {
+    public void checkout(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace,
+            @Nonnull TaskListener listener, @CheckForNull File changelogFile, @CheckForNull SCMRevisionState baseline)
+            throws IOException, InterruptedException {
         SimpleDateFormat scm_datetime_formatter = new SimpleDateFormat(SURROUND_DATETIME_FORMAT_STR_2);
 
-        Date currentDate = new Date(); //defaults to current
+        Date currentDate = new Date(); // defaults to current
 
         EnvVars environment = build.getEnvironment(listener);
         if (build instanceof AbstractBuild) {
@@ -464,7 +492,7 @@ public final class SurroundSCM extends SCM {
         }
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getSscmExe(workspace, listener, environment));//will default to sscm user can put in path
+        cmd.add(getSscmExe(workspace, listener, environment));// will default to sscm user can put in path
         cmd.add("get");
         cmd.add("/");
         cmd.add("-wreplace");
@@ -472,8 +500,8 @@ public final class SurroundSCM extends SCM {
         cmd.add("-p".concat(repository));
         cmd.add("-d".concat(workspace.getRemote()));
         cmd.add("-r");
-        cmd.add("-a1");     // for now hardcoded: get latest version in state <No State>
-        //cmd.add("-s" + scm_datetime_formatter.format(currentDate));
+        cmd.add("-a1"); // for now hardcoded: get latest version in state <No State>
+        // cmd.add("-s" + scm_datetime_formatter.format(currentDate));
         if (!bIncludeOutput) {
             cmd.add("-q");
         }
@@ -493,84 +521,156 @@ public final class SurroundSCM extends SCM {
             // Setup the revision state based on what we KNOW to be correct information.
             SurroundSCMRevisionState scmRevisionState = new SurroundSCMRevisionState(currentDate, build.number);
             build.addAction(scmRevisionState);
-            listener.getLogger().println("Checkout calculated ScmRevisionState for build #" + build.number + " to be the datetime " + scm_datetime_formatter.format(currentDate) + " pluginVer: " + pluginVersion);
+            listener.getLogger()
+                    .println("Checkout calculated ScmRevisionState for build #" + build.number + " to be the datetime "
+                            + scm_datetime_formatter.format(currentDate) + " pluginVer: " + pluginVersion);
 
             if (changelogFile != null)
-                captureChangeLog(build, launcher, workspace, listener, lastBuildDate, currentDate, changelogFile, environment);
+                captureChangeLog(build, launcher, workspace, listener, lastBuildDate, currentDate, changelogFile,
+                        environment);
         }
 
         listener.getLogger().println("Checkout completed.");
     }
 
-    public List<SurroundSCMAnnotation> annotate(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
-            String repo, String file) throws IOException, InterruptedException {
-        List<SurroundSCMAnnotation> annotations = new ArrayList<>();
-
-        EnvVars environment = build.getEnvironment(listener);
-        if (build instanceof AbstractBuild) {
-            EnvVarsUtils.overrideAll(environment, ((AbstractBuild) build).getBuildVariables());
+    public void saveCredentialsAndExeForBlames(@Nonnull Run<?, ?> build, @Nonnull EnvVars environment,
+            @Nonnull FilePath workspace, @Nonnull TaskListener listener) {
+        StandardUsernameCredentials credentials = getCredentials(build.getParent(), environment);
+        if (credentials != null && credentials instanceof UsernamePasswordCredentials) {
+            blameCredentials = (UsernamePasswordCredentials) credentials;
         }
-
-        ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getSscmExe(workspace, listener, environment));//will default to sscm user can put in path
-        cmd.add("annotate");
-        cmd.add(file);
-        cmd.add("-b".concat(branch));
-        cmd.add(String.format("-p%s/%s", repository, repo));
-        cmd.add(getServerConnectionArgument(build.getParent(), environment, workspace));
-        cmd.addMasked(getUserPasswordArgument(build.getParent(), environment));
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int cmdResult = launcher.launch().envs(environment).cmds(cmd).stdout(baos).join();
-        if (cmdResult == 0) {
-            Pattern annotateLinePattern = Pattern.compile("^(\\S+)\\s+(\\d+)\\s+(.*)");
-            String content = baos.toString();
-            List<String> lines = Arrays.stream(content.split("\r?\n")).skip(2).collect(Collectors.toList());
-            int idx = 0;
-            for (String line : lines) {
-                Matcher m = annotateLinePattern.matcher(line);
-                if (m.matches()) {
-                    annotations.add(new SurroundSCMAnnotation(idx, m.group(1), Integer.parseInt(m.group(2))));
-                    idx++;
-                }
-            }
+        try {
+            blameExe = getSscmExe(workspace, listener, environment);
+        } catch (Exception e) {
+            blameExe = "sscm";
         }
-
-        listener.getLogger().printf("Annotate of %s/%s completed.%n", repo, file);
-        return annotations;
     }
 
-    public SurroundSCMUser getUserInformation(@Nonnull Run<?, ?> build, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
-        String user) throws IOException, InterruptedException, NoSuchElementException {
-
-        EnvVars environment = build.getEnvironment(listener);
-        if (build instanceof AbstractBuild) {
-            EnvVarsUtils.overrideAll(environment, ((AbstractBuild) build).getBuildVariables());
-        }
+    public Map<Integer, SurroundSCMAnnotation> annotate(@Nonnull EnvVars environment, @Nonnull Launcher launcher,
+            @Nonnull FilePath workspace, @Nonnull TaskListener listener,
+            String repo, String file) throws IOException, InterruptedException {
+        Map<Integer, SurroundSCMAnnotation> annotations = new HashMap<>();
 
         ArgumentListBuilder cmd = new ArgumentListBuilder();
-        cmd.add(getSscmExe(workspace, listener, environment));//will default to sscm user can put in path
-        cmd.add("lsuser");
-        cmd.add("-e");  // include email
-        cmd.add("-f");  // include full name
-        cmd.add(getServerConnectionArgument(build.getParent(), environment, workspace));
-        cmd.addMasked(getUserPasswordArgument(build.getParent(), environment));
+        cmd.add(blameExe);
+        cmd.add("annotate");
+        cmd.add(String.format("%s/%s", repo, file));
+        cmd.add(getServerConnectionArgument(null, environment, workspace));
+        cmd.addMasked(getUserPasswordArgument(blameCredentials));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int cmdResult = launcher.launch().envs(environment).cmds(cmd).stdout(baos).join();
+        int cmdResult = launcher.launch().envs(environment).cmds(cmd).pwd(workspace)
+            .quiet(true).stdout(baos).stderr(new OutputStream() { @Override public void write(int b) { } }).join(); // ignore stderr
         if (cmdResult == 0) {
-            Pattern userPattern = Pattern.compile("^User name: +([^\n]+).*\r?\n Full name: +([^\n]+)\r?\n Email type: +[^\n]*\r?\n Email address: +([^\n]*)",Pattern.MULTILINE);
+            Pattern annotateLinePattern = Pattern.compile("(\\S+)\\s+(\\d+)\\s*");
             String content = baos.toString();
             List<String> lines = Arrays.stream(content.split("\r?\n")).skip(2).collect(Collectors.toList());
+            int lineNr = 0;
             for (String line : lines) {
-                Matcher m = userPattern.matcher(line);
-                if (m.matches()) {
-                    if (m.group(1).equals(user)) {
-                        SurroundSCMUser sscmUser  = new SurroundSCMUser(user,m.group(2),m.group(3));
-                        return sscmUser;
+                lineNr++;
+                Matcher m = annotateLinePattern.matcher(line);
+                if (m.lookingAt()) {
+                    String user = m.group(1);
+                    if (user.equals("win")) {
+                        user = "jw";
+                    }
+                    annotations.put(lineNr,new SurroundSCMAnnotation(lineNr, user, Integer.parseInt(m.group(2))));
+                }
+            }
+            listener.getLogger().printf("Annotate of %s/%s completed with %d lines and %d annotations.%n", repo, file, lineNr, annotations.size());
+        } else {
+            cmd.clear();
+            cmd.add(blameExe);
+            cmd.add("history");
+            cmd.add(String.format("%s/%s", repo, file));
+            cmd.add("-v1:1");   // only for Version 1
+            cmd.add("-aAddToRepository");   // only the add action
+            cmd.add("-w-");     // no workflow actions
+            cmd.add("-c-");     // no custom field actions
+            cmd.add(getServerConnectionArgument(null, environment, workspace));
+            cmd.addMasked(getUserPasswordArgument(blameCredentials));
+            baos.reset();
+            cmdResult = launcher.launch().envs(environment).cmds(cmd).pwd(workspace)
+                .quiet(true).stdout(baos).stderr(new OutputStream() { @Override public void write(int b) { } }).join(); // ignore stderr
+            String content = baos.toString();
+            String[] lines = content.split("\r?\n");
+            boolean bMatch = false;
+            Pattern addActionPattern = Pattern.compile("add\\s+(\\S+)\\s+");
+            String creator = "";
+            for (String line : lines) {
+                if (line.startsWith("Action:")) {
+                    bMatch = true;
+                    continue;
+                }
+                if (bMatch) {
+                    Matcher m = addActionPattern.matcher(line);
+                    if (m.lookingAt()) {
+                        creator = m.group(1);
+                        annotations.put(0, new SurroundSCMAnnotation(0, creator, 1));
+                        break;
                     }
                 }
             }
+            if (annotations.isEmpty()) {
+                listener.getLogger().printf("Could not get creator of %s/%s.%n", repo, file);
+            } else {
+                listener.getLogger().printf("Annotate of %s/%s failed, blaming all on creator %s.%n", repo, file, creator);
+            }
+        }
+
+        return annotations;
+    }
+
+    public SurroundSCMUser getUserInformation(@Nonnull EnvVars environment, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
+        String user) throws IOException, InterruptedException, NoSuchElementException {
+
+        if (sscmLsuserStdout == null) {
+            ArgumentListBuilder cmd = new ArgumentListBuilder();
+            cmd.add(blameExe);
+            cmd.add("lsuser");
+            cmd.add("-e");  // include email
+            cmd.add("-f");  // include full name
+            cmd.add(getServerConnectionArgument(null, environment, workspace));
+            cmd.addMasked(getUserPasswordArgument(blameCredentials));
+    
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int cmdResult = launcher.launch().envs(environment).cmds(cmd).pwd(workspace).quiet(true).stdout(baos).join();
+            if (cmdResult != 0) {
+                throw new IOException("Error getting user information from sscm.");
+            }
+            sscmLsuserStdout = baos.toString();
+        }
+        
+        Pattern fullNamePattern = Pattern.compile("^ Full name:\\s+(.*)");
+        Pattern emailPattern = Pattern.compile("^ Email address:\\s+(.*)");
+        String[] lines = sscmLsuserStdout.split("\r?\n");
+        boolean bMatch = false;
+        String fullName = "";
+        String email = "";
+        for (String line : lines) {
+            if (line.startsWith("User name:")) {
+                bMatch = false;
+                if (line.endsWith(user)) {
+                    bMatch = true;
+                    continue;
+                }
+            }
+            if ( ! bMatch) {
+                continue;
+            }
+            Matcher m = fullNamePattern.matcher(line);
+            if (m.matches()) {
+                fullName = m.group(1);
+                continue;
+            }
+            m = emailPattern.matcher(line);
+            if (m.matches()) {
+                email = m.group(1);
+                break;
+            }
+        }
+        if (bMatch) {
+            return new SurroundSCMUser(user,fullName,email);
         }
         throw new NoSuchElementException(String.format("Username %s not found",user));
     }
@@ -839,8 +939,7 @@ public final class SurroundSCM extends SCM {
         StandardUsernameCredentials credentials = getCredentials(owner, env);
         if (credentials != null && credentials instanceof UsernamePasswordCredentials) {
             UsernamePasswordCredentials upc = (UsernamePasswordCredentials) credentials;
-
-            result = String.format("-y%s:%s", upc.getUsername(), upc.getPassword().getPlainText());
+            result = getUserPasswordArgument(upc);
         } else if (userName != null && !userName.isEmpty()) {
             if (password != null) {
                 result = String.format("-y%s:%s", userName, password);
@@ -851,6 +950,11 @@ public final class SurroundSCM extends SCM {
             throw new IOException(String.format("Failed to find currently defined username//password credential. [%s] %s",
                     getCredentialsId(), credentials != null ? CredentialsNameProvider.name(credentials) : "Failed to find credential ID"));
         }
+        return result;
+    }
+
+    private String getUserPasswordArgument(UsernamePasswordCredentials credentials) {
+        String result = String.format("-y%s:%s", credentials.getUsername(), credentials.getPassword().getPlainText());
         return result;
     }
 

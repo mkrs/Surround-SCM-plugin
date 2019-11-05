@@ -1,6 +1,10 @@
 package hudson.scm;
 
-public class SurroundSCMUser {
+import java.io.Serializable;
+
+public class SurroundSCMUser implements Serializable {
+   private static final long serialVersionUID = -7143070883281986249L;
+   
    private final String name;
    private final String fullName;
    private final String email;
