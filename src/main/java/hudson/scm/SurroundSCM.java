@@ -570,10 +570,7 @@ public final class SurroundSCM extends SCM implements Serializable {
                 lineNr++;
                 Matcher m = annotateLinePattern.matcher(line);
                 if (m.lookingAt()) {
-                    String user = m.group(1);
-                    if (user.equals("win")) {
-                        user = "jw";
-                    }
+                    String user = checkUserName(m.group(1));
                     annotations.put(lineNr,new SurroundSCMAnnotation(lineNr, user, Integer.parseInt(m.group(2))));
                 }
             }
@@ -605,7 +602,7 @@ public final class SurroundSCM extends SCM implements Serializable {
                 if (bMatch) {
                     Matcher m = addActionPattern.matcher(line);
                     if (m.lookingAt()) {
-                        creator = m.group(1);
+                        creator = checkUserName(m.group(1));
                         annotations.put(0, new SurroundSCMAnnotation(0, creator, 1));
                         break;
                     }
@@ -619,6 +616,13 @@ public final class SurroundSCM extends SCM implements Serializable {
         }
 
         return annotations;
+    }
+
+    private String checkUserName(@Nonnull String user) {
+        if (user.equals("win")) {
+            return "jw";
+        }
+        return user;
     }
 
     public SurroundSCMUser getUserInformation(@Nonnull EnvVars environment, @Nonnull Launcher launcher, @Nonnull FilePath workspace, @Nonnull TaskListener listener,
