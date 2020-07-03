@@ -17,7 +17,7 @@ import hudson.scm.SCM;
 import hudson.scm.SurroundSCM;
 import io.jenkins.plugins.forensics.blame.Blamer;
 import io.jenkins.plugins.forensics.blame.BlamerFactory;
-import io.jenkins.plugins.forensics.util.FilteredLog;
+import edu.hm.hafner.util.FilteredLog;
 import jenkins.model.Jenkins;
 
 @Extension

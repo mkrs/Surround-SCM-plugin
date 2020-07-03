@@ -17,7 +17,7 @@ public class SurroundSCMProbe extends SCMProbe {
    private static final long serialVersionUID = 1L;
    private final SurroundSCMHead head;
    private final SurroundSCMRevision revision;
-   private final SurroundSCMSource scmSource;
+   private transient final SurroundSCMSource scmSource;
    private final TaskListener listener;
 
    public SurroundSCMProbe(SurroundSCMHead head, SurroundSCMRevision revision, SurroundSCMSource scmSource, TaskListener listener) {
@@ -39,6 +39,10 @@ public class SurroundSCMProbe extends SCMProbe {
          repository = repository + "/" + path.substring(0, idxSlash);
       }
 
+      if (scmSource == null) {
+         throw new IOException("SurroundSCMProbe.scmSource is null. Unable to check file '" + path + "'.");
+      }
+
       ArgumentListBuilder cmd = new ArgumentListBuilder();
       cmd.add("sscm");
       cmd.add("ls");
@@ -53,7 +57,7 @@ public class SurroundSCMProbe extends SCMProbe {
          final Node node = Jenkins.get();
          Launcher launcher = node.createLauncher(listener);
          launcher.launch().cmds(cmd).stdout(baos).join();
-         String output = baos.toString();
+         String output = baos.toString("US-ASCII");
          String[] lines = output.split("\r?\n");
          boolean bRepositoryMatched = false;
          for (String line : lines) {

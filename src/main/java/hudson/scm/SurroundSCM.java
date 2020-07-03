@@ -563,7 +563,7 @@ public final class SurroundSCM extends SCM implements Serializable {
             .quiet(true).stdout(baos).stderr(new OutputStream() { @Override public void write(int b) { } }).join(); // ignore stderr
         if (cmdResult == 0) {
             Pattern annotateLinePattern = Pattern.compile("(\\S+)\\s+(\\d+)\\s*");
-            String content = baos.toString();
+            String content = baos.toString("US-ASCII");
             List<String> lines = Arrays.stream(content.split("\r?\n")).skip(2).collect(Collectors.toList());
             int lineNr = 0;
             for (String line : lines) {
@@ -587,9 +587,9 @@ public final class SurroundSCM extends SCM implements Serializable {
             cmd.add(getServerConnectionArgument(null, environment, workspace));
             cmd.addMasked(getUserPasswordArgument(blameCredentials));
             baos.reset();
-            cmdResult = launcher.launch().envs(environment).cmds(cmd).pwd(workspace)
+            launcher.launch().envs(environment).cmds(cmd).pwd(workspace)
                 .quiet(true).stdout(baos).stderr(new OutputStream() { @Override public void write(int b) { } }).join(); // ignore stderr
-            String content = baos.toString();
+            String content = baos.toString("US-ASCII");
             String[] lines = content.split("\r?\n");
             boolean bMatch = false;
             Pattern addActionPattern = Pattern.compile("add\\s+(\\S+)\\s+");
@@ -642,7 +642,7 @@ public final class SurroundSCM extends SCM implements Serializable {
             if (cmdResult != 0) {
                 throw new IOException("Error getting user information from sscm.");
             }
-            sscmLsuserStdout = baos.toString();
+            sscmLsuserStdout = baos.toString("US-ASCII");
         }
         
         Pattern fullNamePattern = Pattern.compile("^ Full name:\\s+(.*)");

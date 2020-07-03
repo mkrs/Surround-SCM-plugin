@@ -18,7 +18,7 @@ import jenkins.model.Jenkins;
 
 public class NavigateHelper {
 
-   private static final Logger logger = Logger.getLogger(NavigateHelper.class.getName());
+   // private static final Logger logger = Logger.getLogger(NavigateHelper.class.getName());
 
    private final SurroundSCMFileSystem fs;
    private final SurroundSCM scm;
@@ -74,7 +74,7 @@ public class NavigateHelper {
          final hudson.model.Node node = Jenkins.get();
          Launcher launcher = node.createLauncher(listener);
          launcher.launch().cmds(cmd).stdout(baos).join();
-         String output = baos.toString();
+         String output = baos.toString("US-ASCII");
          String[] lines = output.split("\r?\n");
          boolean bInSearchedRepository = false;
          for (String line : lines) {

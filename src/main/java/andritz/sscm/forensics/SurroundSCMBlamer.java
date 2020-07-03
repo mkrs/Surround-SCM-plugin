@@ -21,7 +21,9 @@ import hudson.scm.SurroundSCMUser;
 import io.jenkins.plugins.forensics.blame.Blamer;
 import io.jenkins.plugins.forensics.blame.Blames;
 import io.jenkins.plugins.forensics.blame.FileBlame;
+import io.jenkins.plugins.forensics.blame.FileBlame.FileBlameBuilder;
 import io.jenkins.plugins.forensics.blame.FileLocations;
+import edu.hm.hafner.util.FilteredLog;
 
 public class SurroundSCMBlamer extends Blamer {
    private static final long serialVersionUID = 3013015086648085760L;
@@ -42,33 +44,34 @@ public class SurroundSCMBlamer extends Blamer {
    }
 
    @Override
-   public Blames blame(FileLocations locations) {
+   public Blames blame(FileLocations locations, FilteredLog logger) {
       Blames blames = new Blames();
       if (locations.isEmpty()) {
          return blames;
       }
 
-      blames.logInfo("Invoking SurroundSCM blamer to create author and version information for %d affected files", locations.size());
+      logger.logInfo("Invoking SurroundSCM blamer to create author and version information for %d affected files", locations.size());
 
       String workspacePath = getWorkspacePath();
       long nano = System.nanoTime();
-      blames = fillBlames(workspacePath, locations, blames);
-      blames.logInfo("Blaming of authors took %d seconds", 1 + (System.nanoTime() - nano) / 1_000_000_000L);
+      blames = fillBlames(workspacePath, locations, blames, logger);
+      logger.logInfo("Blaming of authors took %d seconds", 1 + (System.nanoTime() - nano) / 1_000_000_000L);
       return blames;
    }
 
-   private Blames fillBlames(String workspacePath, FileLocations locations, Blames blames) {
+   private Blames fillBlames(String workspacePath, FileLocations locations, Blames blames, FilteredLog logger) {
       final String workspacePathSlash = workspacePath.replaceAll("\\\\", "/");
       Launcher launcher;
       try {
          launcher = workspace.createLauncher(listener);
       } catch (Exception ex) {
-         blames.logException(ex, "Error creating launcher for annotating files.");
+         logger.logException(ex, "Error creating launcher for annotating files.");
          return blames;
       }
+      FileBlameBuilder builder = new FileBlameBuilder();
       for (String file : locations.getFiles()) {
          if ( ! file.startsWith(workspacePathSlash)) {
-            blames.logInfo("Skipping file '%s' (not in workspace path)", file);
+            logger.logInfo("Skipping file '%s' (not in workspace path)", file);
             continue;
          }
          Set<Integer> lineSet = locations.getLines(file);
@@ -79,17 +82,17 @@ public class SurroundSCMBlamer extends Blamer {
          final int lastIndex = relativeFile.lastIndexOf("/");
          final String fileName = relativeFile.substring(lastIndex + 1);
          final String repository = relativeFile.substring(0,lastIndex);
-         blames.logInfo("Getting annotations for repo: %s, file: %s", repository, fileName);
+         logger.logInfo("Getting annotations for repo: %s, file: %s", repository, fileName);
          boolean bAlreadyBlamedCreator = false;
          try {
             Map<Integer,SurroundSCMAnnotation> annotations = sscm.annotate(environment, launcher, workspace, listener, repository, fileName);
             if (annotations.isEmpty()) {
-               blames.logError("Got empty annotations for repo: %s, file: %s", repository, fileName);
+               logger.logError("Got empty annotations for repo: %s, file: %s", repository, fileName);
             } else {
                for (int lineNr : lineSet) {
                   int key = lineNr;
                   if ( ! annotations.containsKey(key)) {
-                     blames.logInfo("No annotation found for line %d, repo: %s, file: %s. Blaming creator.", lineNr, repository, fileName);
+                     logger.logInfo("No annotation found for line %d, repo: %s, file: %s. Blaming creator.", lineNr, repository, fileName);
                      if ( ! bAlreadyBlamedCreator && annotations.containsKey(0)) {
                         bAlreadyBlamedCreator = true;
                         key = 0;
@@ -98,7 +101,7 @@ public class SurroundSCMBlamer extends Blamer {
                      }
                   }
                   SurroundSCMAnnotation s = annotations.get(key);
-                  FileBlame fileBlame = new FileBlame(file);
+                  FileBlame fileBlame = builder.build(file);
                   final String user = s.getUser();
                   fileBlame.setCommit(lineNr, String.valueOf(s.getVersion()));
                   fileBlame.setName(lineNr, user);
@@ -107,9 +110,9 @@ public class SurroundSCMBlamer extends Blamer {
                }
             }
          } catch (IOException ioex) {
-            blames.logException(ioex, "Error in annotating file.");
+            logger.logException(ioex, "Error in annotating file.");
          } catch (InterruptedException intex) {
-            blames.logException(intex, "Annotation was interrupted.");
+            logger.logException(intex, "Annotation was interrupted.");
          }
       }
       return blames;

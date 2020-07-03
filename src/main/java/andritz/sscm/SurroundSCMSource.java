@@ -119,7 +119,7 @@ public class SurroundSCMSource extends SCMSource {
       // Baseline (baseline)(active:yes)(caching:on demand)(frozen:no)(hidden:no)
       // base090 (baseline)(active:yes)(caching:on demand)(frozen:yes)(hidden:yes)
       // free09001 (baseline)(active:yes)(caching:on demand)(frozen:yes)(hidden:yes)
-      String output = baos.toString();
+      String output = baos.toString("US-ASCII");
       String[] lines = output.split("\r?\n");
       String regex = "^(\\S+) "
             + "\\((\\S+)\\)" // branch type
