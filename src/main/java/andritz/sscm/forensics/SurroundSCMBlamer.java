@@ -69,17 +69,17 @@ public class SurroundSCMBlamer extends Blamer {
          return blames;
       }
       FileBlameBuilder builder = new FileBlameBuilder();
-      for (String file : locations.getFiles()) {
-         if ( ! file.startsWith(workspacePathSlash)) {
-            logger.logInfo("Skipping file '%s' (not in workspace path)", file);
+      for (String relativeFile : locations.getFiles()) {
+         if ( relativeFile.startsWith("..")) {
+            logger.logInfo("Skipping file '%s' (not in workspace path)", relativeFile);
             continue;
          }
-         Set<Integer> lineSet = locations.getLines(file);
-         String relativeFile = file.substring(workspacePathSlash.length());
-         if (relativeFile.startsWith("/")) {
-            relativeFile = relativeFile.substring(1);
-         }
+         Set<Integer> lineSet = locations.getLines(relativeFile);
          final int lastIndex = relativeFile.lastIndexOf("/");
+         if (lastIndex < 0) {
+            logger.logInfo("Skipping file '%s' (not in a module)", relativeFile);
+            continue;
+         }
          final String fileName = relativeFile.substring(lastIndex + 1);
          final String repository = relativeFile.substring(0,lastIndex);
          logger.logInfo("Getting annotations for repo: %s, file: %s", repository, fileName);
@@ -101,7 +101,7 @@ public class SurroundSCMBlamer extends Blamer {
                      }
                   }
                   SurroundSCMAnnotation s = annotations.get(key);
-                  FileBlame fileBlame = builder.build(file);
+                  FileBlame fileBlame = builder.build(relativeFile);
                   final String user = s.getUser();
                   fileBlame.setCommit(lineNr, String.valueOf(s.getVersion()));
                   fileBlame.setName(lineNr, user);
@@ -110,9 +110,9 @@ public class SurroundSCMBlamer extends Blamer {
                }
             }
          } catch (IOException ioex) {
-            logger.logException(ioex, "Error in annotating file.");
+            logger.logException(ioex, "Error in annotating file '%s'.", relativeFile);
          } catch (InterruptedException intex) {
-            logger.logException(intex, "Annotation was interrupted.");
+            logger.logException(intex, "Annotation of '%s' was interrupted.", relativeFile);
          }
       }
       return blames;
